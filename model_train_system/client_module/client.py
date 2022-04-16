@@ -31,22 +31,20 @@ class MockClient(object):
             model_update_infos.append(update_info)
         return model_update_infos
 
-    def get_bytes_param(self):
+    def get_global_bytes_param(self):
         model_infos = self.get_model_updates()
-        bytes_model = self.trainer.aggregate(model_infos)
-        return bytes_model
+        global_bytes_param = self.trainer.aggregate(model_infos)
+        return global_bytes_param
 
     def flesh_global_model(self):
-        bytes_model = self.get_bytes_param()
-        self.trainer.load_bytes_param(bytes_model)
+        bytes_param = self.get_global_bytes_param()
+        self.trainer.load_bytes_param(bytes_param)
         l.debug(f'{self.tag} flesh_global_model, view is {self.model_view()}')
 
     def local_train(self):
         l.info(f"{self.tag} start local training...")
-        # l.debug(f'{self.tag} before view is {self.model_view()}')
         self.trainer.local_training()
         l.info(f"{self.tag} finish local training...")
-        # l.debug(f'after view is {self.model_view()}')
 
     def cur_model_hash(self):
         bytes_param = self.trainer.get_bytes_param()
@@ -70,14 +68,18 @@ class MockClient(object):
     def vote(self):
         model_infos = self.get_model_updates()
         candidates = self.trainer.get_candidates(model_infos)
-        l.debug(f'{self.tag} vote for {candidates}')
+        l.info(f'{self.tag} vote for {candidates}')
         self.invoker.vote(candidates)
     
     def init_model(self):
         bytes_param = self.trainer.get_bytes_param()
         init_model_hash = self.ipfs.add_file(bytes_param)
         self.invoker.init_train_info(init_model_hash)
-        l.info(f"client {self.id} init model {init_model_hash}")
+        l.info(f"{self.tag} init model {init_model_hash}")
+
+    def enroll(self):
+        self.invoker.enroll()
+        l.info(f"{self.tag} enroll")
         
 
 

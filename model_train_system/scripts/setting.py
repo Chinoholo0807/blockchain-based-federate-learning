@@ -13,6 +13,8 @@ task_setting = {
     # "model_description":"emnist_2nn",
     "dataset_description": "MNIST",
     # "dataset_description":"EMNIST",
+    "max_version": 1000,
+    "n_client": 100,
 }
 
 setting = {}

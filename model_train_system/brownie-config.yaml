@@ -19,7 +19,6 @@ networks:
         cmd_settings: 
             gas_limit: 10000000001
             default_balance: "1000 ether"
-            timeout: 6000
             accounts: 10
     live:
         gas_limit: auto

@@ -165,6 +165,9 @@ class ClusterSimulator(object):
         # the first round should upload init model,specific handle
         if self.round == 0:
             l.info(f'#######round {self.round}######')
+            for i in range(self.n_client):
+                self.clients[i].enroll()
+
             self.clients[0].init_model()
             # evaluate init model loss
             global_acc, global_loss = self.evaluate_global_model()

@@ -41,4 +41,14 @@ class MockInvoker(object):
         return format_train_infos
 
     def vote(self, candidates):
-        self.contract.vote(candidates, {"from": self.account})
+        self.contract.vote(
+            candidates,
+            {"from": self.account}
+        )
+
+    def enroll(self,dataset_desc ='', extra_desc = ''):
+        self.contract.enrollTrain(
+            dataset_desc,
+            extra_desc,
+            {"from": self.account}
+        )

@@ -163,7 +163,7 @@ class Trainer(object):
         log_infos = ''
         for model_info in model_infos:
             fraction = model_info.data_size / all_data_size
-            log_infos = log_infos + f"<fra({fraction}) ds({model_info.data_size})>"
+            log_infos = log_infos + f" trainer{model_info.trainer}_poll{model_info.poll}_f{fraction}"
             if average_params is None:
                 average_params = {}
                 for k, v in model_info.param_dict.items():
@@ -182,12 +182,11 @@ class Trainer(object):
             return 1 / (1 + math.exp(-z))
 
         for model_info in model_infos:
-            denominator += model_info.data_size * sigmoid(model_info.poll - self.n_vote)
+            denominator += model_info.data_size * sigmoid(model_info.poll - self.n_vote + 1)
         log_infos = ''
         for model_info in model_infos:
-            fraction = model_info.data_size * sigmoid(model_info.poll - self.n_vote) / denominator
-            log_infos = log_infos + f"<fra({fraction}) ds({model_info.data_size})>"
-            # l.debug(f'fraction of uploader {model_info.uploader} is {fraction},data_size is {model_info.train_size},poll is {model_info.poll}')
+            fraction = model_info.data_size * sigmoid(model_info.poll - self.n_vote + 1) / denominator
+            log_infos = log_infos + f" trainer{model_info.trainer}_poll{model_info.poll}_f{fraction}"
             if average_params is None:
                 average_params = {}
                 for k, v in model_info.param_dict.items():

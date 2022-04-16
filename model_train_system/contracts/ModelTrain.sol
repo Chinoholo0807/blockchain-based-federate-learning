@@ -31,6 +31,8 @@ contract ModelTrain {
         string taskDescription; // the description of the federate learning task
         string modelDescription; // the description of the model(e.g. model name,model struct)
         string datasetDescription; // the description of the dataset(e.g. struct of the dataset)
+        uint maxVersion; // the max version we train
+        uint nClient; // the number of clients participate in
     }
     struct TrainSetting{
         uint batchSize; // local training batch size
@@ -38,6 +40,11 @@ contract ModelTrain {
         uint epochs; // local training epoch step
         uint nTrainer; // the number of client participate in one global model update epoch
         uint nPoll; // the number of polls one trainer has
+    }
+    struct ClientInfo{
+        address addr; // the address of this client
+        string datasetDescription; // the dataset description of this client
+        string extraDescription; // extra description
     }
     struct Setting{
         TaskSetting task;
@@ -52,7 +59,11 @@ contract ModelTrain {
     // use to record the contribution
     mapping(address => uint) public contributions;
 
-    event UploadLocalUpdate(address _uploader,uint _version);
+    // use to record the client's info
+    mapping(address => bool) public enroll;
+    ClientInfo[] public clientInfos;
+
+    event UploadTrainInfo(address _uploader,uint _version);
     event NeedAggregation(uint _version);
     event NeedVote(uint _version);
 
@@ -95,6 +106,20 @@ contract ModelTrain {
         return true;
     }
 
+    // enroll the train task
+    function enrollTrain(string memory _datasetDesc,string memory _extraDesc) external returns (bool){
+        require(clientInfos.length < setting.task.nClient,"no more client can enroll");
+        require(enroll[msg.sender] == false,"client has enrolled");
+        ClientInfo info = ClientInfo(
+            msg.sender,
+            _datasetDesc,
+            _extraDesc
+        );
+        clientInfos.push(info);
+        enroll[msg.sender] = true;
+        return true;
+    }
+
     // get all train infos (local training) within specific version
     function getTrainInfos(uint _version) view public returns (TrainInfo[] memory) {
         require(_version <= curVersion,"invalid version");
@@ -118,14 +143,16 @@ contract ModelTrain {
 
     // upload train info
     function uploadTrainInfo(uint _version,uint _dataSize,string memory _modelUpdateHash) public returns (bool){
+        require(curVersion <= setting.task.maxVersion,"model train finished");
         require(_version == curVersion,"unexpected version");
+        require(enroll[msg.sender] == true,"uploader do not enroll the task");
         Snapshot storage snapshot = snapshots[curVersion];
         // new trainer of current version
         require(!snapshot.trainFinished,"current version's local updates collected finished");
         if (!exist(msg.sender)){
             snapshot.trainers.push(msg.sender);    
         }
-        emit UploadLocalUpdate(msg.sender, curVersion);
+        emit UploadTrainInfo(msg.sender, curVersion);
         snapshot.details[msg.sender].trainInfo = TrainInfo(msg.sender, _dataSize,_version, _modelUpdateHash,0);
        // train info collect finished
         if(snapshot.trainers.length == setting.train.nTrainer || curVersion == 0){
@@ -141,11 +168,12 @@ contract ModelTrain {
 
     // trainer give the poll
     function vote(address[] memory _candidates,uint _version) public returns (bool){
+        require(curVersion <= setting.task.maxVersion,"model train finished");
         require(_candidates.length <= setting.train.nPoll,"too many candidates");
         require(_version == curVersion,"unexpected version");
         Snapshot storage snapshot = snapshots[curVersion];
         require(snapshot.trainFinished,"current version's local updates collected do not finished");
-        require(exist(msg.sender),"only trainer can approval");
+        require(exist(msg.sender),"only trainer can vote");
         // the trainer's detail
         TrainerDetail storage detail = snapshot.details[msg.sender];
         require(!detail.hasVoted,"this trainer has voted before");
