@@ -25,7 +25,7 @@ class IPFSClient:
         self.client.close()
 
 
-local_cache = Cache(maxsize=20)
+local_cache = Cache(maxsize=200)
 
 
 class MockIPFSClient:

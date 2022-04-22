@@ -53,7 +53,7 @@ contract ModelTrain {
     address public publisher;
     uint public curVersion;
     // global setting of training
-    Setting setting;
+    Setting public setting;
     // version => snapshot with given version
     mapping(uint => Snapshot) snapshots;
     // use to record the contribution
@@ -110,7 +110,7 @@ contract ModelTrain {
     function enrollTrain(string memory _datasetDesc,string memory _extraDesc) external returns (bool){
         require(clientInfos.length < setting.task.nClient,"no more client can enroll");
         require(enroll[msg.sender] == false,"client has enrolled");
-        ClientInfo info = ClientInfo(
+        ClientInfo memory info = ClientInfo(
             msg.sender,
             _datasetDesc,
             _extraDesc
@@ -202,7 +202,11 @@ contract ModelTrain {
             for(uint i=0;i<snapshot.trainers.length;i++){
                 address trainer = snapshot.trainers[i];
                 TrainInfo storage trainInfo = snapshot.details[trainer].trainInfo;
-                contributions[trainer] += (trainInfo.poll) * (trainInfo.dataSize);
+                uint f = 1;
+                if(3 * (trainInfo.poll+1) >= 2* setting.train.nPoll){
+                    f = 2;
+                }
+                contributions[trainer] += (trainInfo.poll) * (trainInfo.dataSize) * f;
             }
             curVersion ++;
             snapshots[curVersion].version = curVersion;

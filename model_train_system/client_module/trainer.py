@@ -70,6 +70,12 @@ class Trainer(object):
         bytes_param = pickle.dumps(model_param_dict)
         return bytes_param
 
+    def get_param_dict(self):
+        return self.model.state_dict()
+
+    def load_param_dict(self,param_dict):
+        self._load_model(param_dict)
+
     def get_data_size(self):
         return len(self.train_dl)
 

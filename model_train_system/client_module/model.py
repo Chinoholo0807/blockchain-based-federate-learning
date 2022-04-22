@@ -98,3 +98,24 @@ class EMNIST_2NN(nn.Module):
         tensor = self.fc3(tensor)
         return tensor
 
+# class CIFAR10_CNN(nn.Module):
+#     def __init__(self):
+#         super().__init__()
+#         self.conv1 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=5, stride=1, padding=2)
+#         self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
+#         self.conv2 = nn.Conv2d(in_channels=32, out_channels=48, kernel_size=5, stride=1, padding=2)
+#         self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
+#         self.fc1 = nn.Linear(7 * 7 * 48, 256)
+#         self.fc2 = nn.Linear(256, 10)
+#
+#     def forward(self, inputs):
+#         tensor = inputs.view(-1, 1, 28, 28)
+#         tensor = F.relu(self.conv1(tensor))
+#         tensor = self.pool1(tensor)
+#         tensor = F.relu(self.conv2(tensor))
+#         tensor = self.pool2(tensor)
+#         tensor = tensor.view(-1, 7 * 7 * 48)
+#         tensor = F.relu(self.fc1(tensor))
+#         tensor = self.fc2(tensor)
+#         return tensor
+

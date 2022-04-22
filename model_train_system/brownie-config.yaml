@@ -11,15 +11,15 @@ networks:
     development:
         gas_limit: max
         gas_buffer: 1
-        gas_price: 0
+#        gas_price: 10
         max_fee: null
         priority_fee: null
         reverting_tx_gas_limit: max
         default_contract_owner: true
         cmd_settings: 
-            gas_limit: 10000000001
+#            gas_limit: 1000000000
             default_balance: "1000 ether"
-            accounts: 10
+            accounts: 100
     live:
         gas_limit: auto
         gas_buffer: 1.1

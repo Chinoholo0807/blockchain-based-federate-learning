@@ -81,6 +81,7 @@ def build_MNIST_dataset(data_dir = './data'):
     test_x = np.multiply(test_x,1.0/255.0)
 
     order = np.arange(train_x.shape[0])
+    np.random.seed(24)
     np.random.shuffle(order)
     train_x = train_x[order]
     train_y = train_y[order]
@@ -91,6 +92,7 @@ def build_MNIST_dataset(data_dir = './data'):
     l.info(f"build MNIST dataset train_x{train_x.shape} train_y{train_y.shape} test_x{test_x.shape} test_y{test_y.shape}")
     n_class = 10
     return train_x,train_y,test_x,test_y,n_class
+
 def build_EMNIST_dataset(data_dir = './data'):
     trainset = torchvision.datasets.EMNIST(data_dir,train=True,download=True,transform=transforms.ToTensor(),split="letters")
     testset = torchvision.datasets.EMNIST(data_dir,train=False,download=True,transform=transforms.ToTensor(),split="letters")
@@ -114,7 +116,7 @@ def build_EMNIST_dataset(data_dir = './data'):
     # train_y = dense_to_one_hot(train_y)
     # test_y = dense_to_one_hot(test_y)
     
-    l.info(f"build MNIST dataset train_x{train_x.shape} train_y{train_y.shape} test_x{test_x.shape} test_y{test_y.shape}")
+    l.info(f"build EMNIST dataset train_x{train_x.shape} train_y{train_y.shape} test_x{test_x.shape} test_y{test_y.shape}")
     n_class = 37
     return train_x,train_y,test_x,test_y,n_class
 
@@ -131,7 +133,7 @@ def build_CIFAR10_dataset(data_dir = './data'):
     test_x ,test_y = [],[]
     #  when first run it ,change load to false
     load = True
-    if load == True:
+    if load:
         dir = os.path.join(data_dir,"cifar-10-batches-py")
         train_x = np.load(os.path.join(dir,"train_x.npy"))
         train_y = np.load(os.path.join(dir,"train_y.npy"))
@@ -169,9 +171,6 @@ def build_CIFAR10_dataset(data_dir = './data'):
     np.random.shuffle(order)
     train_x = train_x[order]
     train_y = train_y[order]
-
-    # train_y = dense_to_one_hot(train_y)
-    # test_y = dense_to_one_hot(test_y)
     
     n_class = 10
     return train_x,train_y,test_x,test_y,n_class

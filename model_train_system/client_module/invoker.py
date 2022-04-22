@@ -1,4 +1,5 @@
-
+import time
+import web3
 
 
 class TrainInfo(object):
@@ -16,6 +17,22 @@ class MockInvoker(object):
         self.contract = setting['contract']
         self.account = setting['account']
         self.id = setting['id']
+
+    def listen_to_event(self, event, timeout=200, poll_interval=2):
+        start_time = time.time()
+        current_time = time.time()
+        w3_contract = web3.eth.Contract(
+            address=self.contract.address,
+            abi=self.contract.abi,
+        )
+        event_filter = w3_contract.events[event].createFilter(fromBlock="latest")
+        while current_time - start_time < timeout:
+            for event_resp in event_filter.get_new_entries():
+                if event in event_resp:
+                    return event_resp
+            time.sleep(poll_interval)
+            current_time = time.time()
+        return None
 
     def init_train_info(self, init_model_update_hash):
         self.contract.initTrainInfo(
@@ -46,9 +63,15 @@ class MockInvoker(object):
             {"from": self.account}
         )
 
-    def enroll(self,dataset_desc ='', extra_desc = ''):
+    def enroll(self, dataset_desc='', extra_desc=''):
         self.contract.enrollTrain(
             dataset_desc,
             extra_desc,
+            {"from": self.account}
+        )
+
+    def get_contribution(self):
+        return self.contract.contributions(
+            self.account,
             {"from": self.account}
         )

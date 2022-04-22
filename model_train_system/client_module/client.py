@@ -40,6 +40,11 @@ class MockClient(object):
         bytes_param = self.get_global_bytes_param()
         self.trainer.load_bytes_param(bytes_param)
         l.debug(f'{self.tag} flesh_global_model, view is {self.model_view()}')
+        return bytes_param
+
+    def flesh_global_model_lazy(self, bytes_param):
+        self.trainer.load_bytes_param(bytes_param)
+        l.debug(f'{self.tag} flesh_global_model_lazy, view is {self.model_view()}')
 
     def local_train(self):
         l.info(f"{self.tag} start local training...")
@@ -66,11 +71,19 @@ class MockClient(object):
         return accuracy, loss
 
     def vote(self):
+        if self.trainer.aggregate_method == 'fed_avg':
+            self.fake_vote()
+            return
         model_infos = self.get_model_updates()
         candidates = self.trainer.get_candidates(model_infos)
         l.info(f'{self.tag} vote for {candidates}')
         self.invoker.vote(candidates)
-    
+
+    def fake_vote(self):
+        candidates = []
+        l.info(f'{self.tag} fake vote for {candidates}')
+        self.invoker.vote(candidates)
+
     def init_model(self):
         bytes_param = self.trainer.get_bytes_param()
         init_model_hash = self.ipfs.add_file(bytes_param)
