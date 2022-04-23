@@ -5,10 +5,11 @@ from cacheout import Cache
 
 class IPFSClient:
 
-    def __init__(self, setting):
-        self.ipfs_api = setting['ipfs_api']
+    def __init__(self,setting):
+        self.id = setting['node']['id']
+        self.ipfs_api =setting['node']['ipfs_api']
         self.client = ipfshttpclient.connect(self.ipfs_api)
-        self.id = setting['id']
+
 
     def get_file(self, file_hash):
         resp = self.client.cat(file_hash)
@@ -17,7 +18,7 @@ class IPFSClient:
 
     def add_file(self, bytes_file):
         assert isinstance(bytes_file, bytes)
-        file_hash = self.client.add_file(bytes_file)
+        file_hash = self.client.add_bytes(bytes_file)
         assert isinstance(file_hash, str)
         return file_hash
 
@@ -53,10 +54,4 @@ class MockIPFSClient:
         return bytes_file
 
 
-if __name__ == "__main__":
-    wrapper = IPFSClient({'ipfs_api': '/ip4/127.0.0.1/tcp/5001'})
-    data = b'just for test data'
-    hash_code = wrapper.add_file(data)
-    print('---------------', hash_code, type(hash_code))
-    resp = wrapper.get_file(hash_code)
-    print('---------------', resp, type(resp))
+

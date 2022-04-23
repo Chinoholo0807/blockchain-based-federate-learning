@@ -1,54 +1,45 @@
 import os
-import sys
-import copy
-import logging
+
 import pandas as pd
 import numpy as np
 import time
-
-# sys.path.append('.')
-# sys.path.append('..')
 from brownie import accounts
 from client_module.log import logger as l, init_logging
-from scripts.deploy import deploy_contract
-from scripts.setting import setting
+from scripts.deploy import deploy_contract_setting
 import client_module.utils as u
-from client_module.client import MockClient
+from client_module.client import Client
 from torch.utils.data import DataLoader
 from torch.utils.data import TensorDataset
+from scripts.helpful_scripts import read_yaml
 import torch
 
 
 class ClusterSimulator(object):
 
-    def __init__(self):
-        init_logging(setting['log_dir'], "DEBUG")
-        l.info(
-            'aggregate_method = {am} dataset = {ds} |'
-            'model_name = {mn}, epochs= {ep} learning_rate = {lr}| '
-            'n_vote= {nv} n_client= {nc} n_attacker = {na}'.format(
-                am=setting['aggregate_method'],
-                na=setting['n_attacker'],
-                ds=setting['dataset_description'],
-                mn=setting['model_description'],
-                lr=setting['learning_rate'],
-                ep=setting['epochs'],
-                nv=setting['n_vote'],
-                nc=setting['n_client'],
-            ))
+    def __init__(self,setting_path):
+        setting = read_yaml(setting_path)
+        self.setting = setting
+        init_logging(setting['node']['log_dir'], setting['node']['log_level'])
+        l.info('\ntrain:{train}\ntask:{task}\nsimulate:{simulate}\n'.format(
+            train = setting['train'],
+            task = setting['task'],
+            simulate = setting['simulate'],
+        ))
+        self.n_attacker = setting['simulate']['n_attacker']
         self.accounts = accounts
-        self.n_client = setting['n_client']
-        self.n_attacker = setting['n_attacker']
-        self.n_trainer = setting['n_trainer']
-        self.n_vote = setting['n_vote']
-        self.model_name = setting['model_description']
+
+        self.n_client = setting['train']['n_client']
+        self.n_trainer = setting['train']['n_trainer']
+        self.n_poll = setting['train']['n_poll']
+
+        self.model_name = setting['task']['model_desc']
 
         # build and split dataset
         client_train_dataset, test_x_tensor, test_y_tensor = u.build_dataset(
-            dataset_name=setting['dataset_description'],
-            n_client=setting['n_split'],
+            dataset_name=setting['task']['dataset_desc'],
+            n_client=setting['simulate']['n_split'],
             n_attacker=self.n_attacker,
-            data_dir=setting['dataset_dir']
+            data_dir=setting['node']['dataset_dir']
         )
         self.test_dl = DataLoader(
             TensorDataset(test_x_tensor, test_y_tensor),
@@ -56,8 +47,7 @@ class ClusterSimulator(object):
             shuffle=False
         )
         l.info(f"build test dataloader finish...")
-
-        self.contract = deploy_contract()
+        self.contract = deploy_contract_setting(setting)
         l.info(f"deploy contract,contract's info:{self.contract}")
 
         self.round = 0
@@ -67,20 +57,19 @@ class ClusterSimulator(object):
         self.clients = []
         for id in range(self.n_client):
             client_setting = setting.copy()
-            client_setting["model_name"] = self.model_name
             train_x_tensor, train_y_tensor = client_train_dataset[id]
-            client_setting["dataset"] = TensorDataset(
+            client_setting['train']["dataset"] = TensorDataset(
                 train_x_tensor,
                 train_y_tensor
             )
-            client_setting["id"] = id
-            client_setting["account"] = self.accounts[id]
-            client_setting["contract"] = self.contract
+            client_setting['node']['id'] = id
+            client_setting['node']["account"] = self.accounts[id]
+            client_setting['node']["contract_addr"] = self.contract.address
 
-            new_client = MockClient(client_setting)
+            new_client = Client(client_setting)
             self.clients.append(new_client)
 
-        l.info(f"build {len(self.accounts)} clients success")
+        l.info(f"build {self.n_client} clients success")
 
     def flesh(self, client_ids=None):
         """
@@ -229,22 +218,22 @@ class ClusterSimulator(object):
 
         pth_name = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime(time.time())) + \
                    '@nc{nc}_nt{nt}_na{na}@lr{lr}_bs{bs}_ep{ep}_{mn}_{ag}@r{r}.pth'.format(
-                       nc=setting['n_client'],
-                       nt=setting['n_trainer'],
-                       na=setting['n_attacker'],
-                       lr=setting['learning_rate'],
-                       bs=setting['batch_size'],
-                       ep=setting['epochs'],
-                       mn=self.model_name,
-                       ag=setting['aggregate_method'],
+                       nc=self.setting['train']['n_client'],
+                       nt=self.setting['train']['n_trainer'],
+                       na=self.setting['simulate']['n_attacker'],
+                       lr=self.setting['train']['learning_rate'],
+                       bs=self.setting['train']['batch_size'],
+                       ep=self.setting['train']['epochs'],
+                       mn=self.setting['task']['model_desc'],
+                       ag=self.setting['train']['aggregate_method'],
                        r=self.round - 1)
-        pth_path = os.path.join(setting['model_dir'], pth_name)
+        pth_path = os.path.join(self.setting['model_dir'], pth_name)
         torch.save(param_dict, pth_path)
         l.info("save model param dict in pth path:{}".format(pth_path))
 
     def load(self, round, pth_name):
         self.round = round
-        pth_path = os.path.join(setting['model_dir'], pth_name)
+        pth_path = os.path.join(self.setting['node']['model_dir'], pth_name)
         param_dict = torch.load(pth_path)
         self.clients[0].trainer.load_param_dict(param_dict)
         for i in range(self.n_client):
@@ -263,14 +252,14 @@ class ClusterSimulator(object):
                           )
         csv_name = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime(time.time())) + \
                    '@nc{nc}_nt{nt}_na{na}@lr{lr}_bs{bs}_ep{ep}_{mn}_{ag}.csv'.format(
-                       nc=setting['n_client'],
-                       nt=setting['n_trainer'],
-                       na=setting['n_attacker'],
-                       lr=setting['learning_rate'],
-                       bs=setting['batch_size'],
-                       ep=setting['epochs'],
-                       mn=self.model_name,
-                       ag=setting['aggregate_method'])
-        csv_path = os.path.join(setting['results_dir'],
+                       nc=self.setting['train']['n_client'],
+                       nt=self.setting['train']['n_trainer'],
+                       na=self.setting['simulate']['n_attacker'],
+                       lr=self.setting['train']['learning_rate'],
+                       bs=self.setting['train']['batch_size'],
+                       ep=self.setting['train']['epochs'],
+                       mn=self.setting['task']['model_desc'],
+                       ag=self.setting['train']['aggregate_method'])
+        csv_path = os.path.join(self.setting['node']['results_dir'],
                                 csv_name)
         df.to_csv(csv_path, index=False)

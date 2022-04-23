@@ -7,7 +7,8 @@ node:
     results_dir: '.\reports\results'
     model_dir: '.\reports\model'
   ipfs_api: '/ip4/127.0.0.1/tcp/5001'
-
+  log_level: 'DEBUG'
+  contract_addr: '0x3194cBDC3dbcd3E11a07892e7bA5c3394048Cc87'
 simulate:
   n_attacker: 3
 

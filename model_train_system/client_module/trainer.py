@@ -23,20 +23,26 @@ class ModelUpdateInfo(object):
 
 class Trainer(object):
 
-    def __init__(self, train_setting):
-
-        # training setting
-        self.epochs = train_setting['epochs']
-        self.batch_size = train_setting['batch_size']
-        self.n_vote = train_setting['n_vote']
-        self.n_trainer = train_setting['n_trainer']
-        self.model_name = train_setting['model_name']
-        self.learning_rate = train_setting['learning_rate']
-        self.train_ds = train_setting['dataset']
-        self.id = train_setting['id']
+    def __init__(self, setting):
+        self.id = setting['node']['id']
         self.tag = f"<trainer {self.id}>:"
+
+        train = setting['train']
+        task = setting['task']
+        # training setting
+        self.epochs = train['epochs']
+        self.batch_size = train['batch_size']
+        self.learning_rate = train['learning_rate']
+        self.n_poll = train['n_poll']
+        self.n_trainer = train['n_trainer']
+        self.train_ds = train['dataset']
+        self.aggregate_method = train['aggregate_method']
+
+        self.model_name = task['model_desc']
+
+
         assert isinstance(self.train_ds, TensorDataset)
-        self.aggregate_method = train_setting['aggregate_method']
+
 
         # init training model
         self.dev = torch.device('cpu')
@@ -137,7 +143,7 @@ class Trainer(object):
             acc, _ = self.evaluate(self.test_dl)
             accs.append(acc)
 
-        args = np.argsort(accs)[::-1][:self.n_vote]
+        args = np.argsort(accs)[::-1][:self.n_poll]
         l.debug(f'{self.tag} accs evaluated is {accs},choice idx is {args}')
         candidates = []
         for idx in args:
@@ -188,10 +194,10 @@ class Trainer(object):
             return 1 / (1 + math.exp(-z))
 
         for model_info in model_infos:
-            denominator += model_info.data_size * sigmoid(model_info.poll - self.n_vote + 1)
+            denominator += model_info.data_size * sigmoid(model_info.poll - self.n_poll + 1)
         log_infos = ''
         for model_info in model_infos:
-            fraction = model_info.data_size * sigmoid(model_info.poll - self.n_vote + 1) / denominator
+            fraction = model_info.data_size * sigmoid(model_info.poll - self.n_poll + 1) / denominator
             log_infos = log_infos + f" trainer{model_info.trainer}_poll{model_info.poll}_f{fraction}"
             if average_params is None:
                 average_params = {}

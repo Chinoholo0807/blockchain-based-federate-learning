@@ -6,6 +6,7 @@
       <sourceFolder url="file://$MODULE_DIR$/model_train_system" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/model_train_system/build" />
       <excludeFolder url="file://$MODULE_DIR$/model_train_system/data" />
+      <excludeFolder url="file://$MODULE_DIR$/model_train_system/reports" />
       <excludeFolder url="file://$MODULE_DIR$/model_train_system/reports/logs" />
       <excludeFolder url="file://$MODULE_DIR$/model_train_system/reports/results" />
     </content>

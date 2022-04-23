@@ -1,19 +1,50 @@
-from client_module.invoker import MockInvoker
-from client_module.trainer import Trainer,ModelUpdateInfo
-from client_module.ipfs_client import IPFSClient,MockIPFSClient
+from client_module.invoker import Invoker
+from client_module.trainer import Trainer, ModelUpdateInfo
+from client_module.ipfs_client import IPFSClient, MockIPFSClient
 from client_module.log import logger as l
+from torch.utils.data import TensorDataset
+import client_module.utils as u
+from brownie import accounts
 
-
-
-class MockClient(object):
+class Client(object):
 
     def __init__(self, setting):
-        self.invoker = MockInvoker(setting)
+        self.id = setting['node']["id"]
+        self.tag = f"<client {self.id}>:"
+        setting['node']['account'] = accounts[self.id]
+        # build the invoker
+        self.invoker = Invoker(setting)
+        # get the contract task setting and train setting
+        contract_setting = self.invoker.get_setting()
+        l.debug(f'{self.tag} contract_setting:{contract_setting.train,contract_setting.task}')
+        setting['train'].update(contract_setting.train)
+        setting['task'].update(contract_setting.task)
+
+        # build train dataset
+        if setting['train'].get('dataset') is None:
+            client_train_dataset, test_x_tensor, test_y_tensor = u.build_dataset(
+                dataset_name=setting['task']['dataset_desc'],
+                n_client=setting['simulate']['n_split'],
+                n_attacker=setting['simulate']['n_attacker'],
+                data_dir=setting['node']['dataset_dir'],
+            )
+            train_x_tensor, train_y_tensor = client_train_dataset[self.id]
+            dataset = TensorDataset(
+                train_x_tensor,
+                train_y_tensor
+            )
+            setting['train']["dataset"] = dataset
+        dataset = setting['train']["dataset"]
+        l.info(f'{self.tag} build the dataset {len(dataset)}')
+        # build the trainer
         self.trainer = Trainer(setting)
 
-        self.ipfs = MockIPFSClient(setting)
-        self.id = setting["id"]
-        self.tag = f"<client {self.id}>:"
+        # build the ipfs client
+        if setting['simulate']['mock_ipfs'] :
+            l.info(f"{self.tag} use mock ipfs")
+            self.ipfs = MockIPFSClient(setting)
+        else:
+            self.ipfs = IPFSClient(setting)
 
     def get_model_updates(self):
         train_infos = self.invoker.get_all_train_info()
@@ -97,6 +128,3 @@ class MockClient(object):
 
 if __name__ == "__main__":
     pass
-
-
-
