@@ -104,7 +104,7 @@ class ClusterSimulator(object):
             for c_id in client_ids:
                 selected_clients.append(self.clients[c_id])
         for client in selected_clients:
-            client.local_train()
+            client.local_training()
             client.upload_train_info()
 
     def evaluate_local_model(self, client_ids=None):
@@ -227,7 +227,7 @@ class ClusterSimulator(object):
                        mn=self.setting['task']['model_desc'],
                        ag=self.setting['train']['aggregate_method'],
                        r=self.round - 1)
-        pth_path = os.path.join(self.setting['model_dir'], pth_name)
+        pth_path = os.path.join(self.setting['node']['model_dir'], pth_name)
         torch.save(param_dict, pth_path)
         l.info("save model param dict in pth path:{}".format(pth_path))
 

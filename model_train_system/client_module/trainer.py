@@ -64,7 +64,8 @@ class Trainer(object):
         # init data loader
         self.train_dl = DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=True)
         self.test_dl = self.train_dl
-
+        if not (train.get('global_test_dl') is None):
+            self.global_test_dl = train['global_test_dl']
     def load_bytes_param(self, bytes_param):
         assert isinstance(bytes_param, bytes)
         param_dict = pickle.loads(bytes_param)
@@ -107,6 +108,10 @@ class Trainer(object):
                 loss = self.loss_fn(pred_y, train_y)
                 loss.backward()
                 self.opti.step()
+
+    def evaluate_global(self):
+        return self.evaluate(self.global_test_dl)
+
 
     def evaluate(self, test_dl):
         """

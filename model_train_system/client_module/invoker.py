@@ -1,7 +1,8 @@
 import time
-import web3
+from web3 import Web3
 from brownie import ModelTrain, Contract
 from client_module.log import logger as l
+
 
 class TrainInfo(object):
     def __init__(self, trainer, data_size, version, model_update_hash, poll):
@@ -11,8 +12,9 @@ class TrainInfo(object):
         self.model_update_hash = model_update_hash
         self.poll = poll
 
+
 class Setting(object):
-    def __init__(self,train,task):
+    def __init__(self, train, task):
         self.train = {}
         self.train['batch_size'] = train[0]
         self.train['learning_rate'] = train[1]
@@ -29,6 +31,12 @@ class Setting(object):
         self.task['model_desc'] = task[1]
         self.task['dataset_desc'] = task[2]
 
+
+EVENT_NEED_AGGREGATION = "NeedAggregation"
+EVENT_NEED_VOTE = "NeedVote"
+EVENT_UPLOAD = "UploadTrainInfo"
+
+
 class Invoker(object):
     def __init__(self, setting):
         self.id = setting['node']['id']
@@ -43,32 +51,45 @@ class Invoker(object):
 
     def get_setting(self):
         [task, train] = self.contract.setting()
-        return Setting(train,task)
+        return Setting(train, task)
 
-    def listen_to_event(self, event, timeout=200, poll_interval=2):
+    def get_state(self):
+        version = self.contract.curVersion()
+        state = self.contract.curState()
+        return version, state
+
+    def listen_to_event(self, event, timeout=5, poll_interval=1):
         l.info(f"{self.tag}wait for event {event}...")
         start_time = time.time()
         current_time = time.time()
-        w3_contract = web3.eth.Contract(
-            address=self.contract.address,
+        # TODO
+        w3 = Web3(Web3.HTTPProvider("HTTP://127.0.0.1:8545"))
+        assert w3.isConnected()
+        w3_contract = w3.eth.contract(
             abi=self.contract.abi,
+            address=self.contract.address
         )
         event_filter = w3_contract.events[event].createFilter(fromBlock="latest")
         while current_time - start_time < timeout:
-            for event_resp in event_filter.get_new_entries():
-                if event in event_resp:
-                    return event_resp
+            for e in event_filter.get_new_entries():
+                l.debug(f"{self.tag} catch event:{e.event}({e.args.__dict__})")
+                return e.args.__dict__
             time.sleep(poll_interval)
             current_time = time.time()
+        l.debug(f"{self.tag} wait event {event} timeout...")
         return None
 
-    def wait_for_aggregate(self):
-        resp = self.listen_to_event('NeedAggregation', 2000000)
-        return resp
+    def wait_for_aggregation(self):
+        event = self.listen_to_event(EVENT_NEED_AGGREGATION)
+        return event
+
+    def wait_for_upload(self):
+        event = self.listen_to_event(EVENT_UPLOAD)
+        return event
 
     def wait_for_vote(self):
-        resp = self.listen_to_event('NeedVote',2000000)
-        return resp
+        event = self.listen_to_event(EVENT_NEED_VOTE)
+        return event
 
     def init_train_info(self, init_model_update_hash):
         self.contract.initTrainInfo(
@@ -77,11 +98,14 @@ class Invoker(object):
         )
 
     def upload_train_info(self, data_size, model_update_hash):
-        self.contract.uploadTrainInfo(
+        txn = self.contract.uploadTrainInfo(
             data_size,
             model_update_hash,
             {"from": self.account}
         )
+        if EVENT_NEED_VOTE in txn.events:
+            return txn.events[EVENT_NEED_VOTE]
+        return None
 
     def get_all_train_info(self):
         train_info_list = self.contract.getTrainInfos(
@@ -94,10 +118,13 @@ class Invoker(object):
         return format_train_infos
 
     def vote(self, candidates):
-        self.contract.vote(
+        txn = self.contract.vote(
             candidates,
             {"from": self.account}
         )
+        if EVENT_NEED_AGGREGATION in txn.events:
+            return txn.events[EVENT_NEED_AGGREGATION]
+        return None
 
     def enroll(self, dataset_desc='', extra_desc=''):
         self.contract.enrollTrain(

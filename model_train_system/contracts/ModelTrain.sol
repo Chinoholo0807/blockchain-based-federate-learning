@@ -52,6 +52,12 @@ contract ModelTrain {
     }
     address public publisher;
     uint public curVersion;
+    enum CurState{
+        COLLECT_MODEL, //0
+        COLLECT_VOTE, //1
+        STOP //2
+    }
+    CurState public curState;
     // global setting of training
     Setting public setting;
     // version => snapshot with given version
@@ -158,6 +164,7 @@ contract ModelTrain {
         if(snapshot.trainers.length == setting.train.nTrainer || curVersion == 0){
             snapshot.trainFinished = true;
             emit NeedVote(curVersion);
+            curState = CurState.COLLECT_VOTE;
         }
         return true;
     }
@@ -209,6 +216,7 @@ contract ModelTrain {
                 contributions[trainer] += (trainInfo.poll) * (trainInfo.dataSize) * f;
             }
             curVersion ++;
+            curState = CurState.COLLECT_MODEL;
             snapshots[curVersion].version = curVersion;
         }
         return true;
