@@ -22,7 +22,7 @@ train:
   n_trainer: 2
   n_poll: 2
   n_client: 2
-  max_version: 100
+  max_version: 10
 
 task:
   task_desc: 'Federate Learning Computing Market Task'

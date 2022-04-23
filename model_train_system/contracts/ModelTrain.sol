@@ -216,7 +216,11 @@ contract ModelTrain {
                 contributions[trainer] += (trainInfo.poll) * (trainInfo.dataSize) * f;
             }
             curVersion ++;
-            curState = CurState.COLLECT_MODEL;
+            if(curVersion > setting.train.maxVersion){
+                curState = CurState.STOP;
+            }else{
+                curState = CurState.COLLECT_MODEL;
+            }
             snapshots[curVersion].version = curVersion;
         }
         return true;

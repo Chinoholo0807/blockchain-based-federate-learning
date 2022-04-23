@@ -8,7 +8,7 @@ node:
   ipfs_api: '/ip4/127.0.0.1/tcp/5001'
   log_level: 'DEBUG'
   is_uploader: false
-  contract_addr: '0x2711D43E99752B654E6925861Aec015E1F635cBb'
+  contract_addr: '0x3194cBDC3dbcd3E11a07892e7bA5c3394048Cc87'
 
 simulate:
   n_attacker: 0

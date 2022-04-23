@@ -5,6 +5,7 @@ import scripts.helpful_scripts as script
 from brownie import accounts
 import time
 
+
 class Node(Client):
 
     def __init__(self, setting_path):
@@ -18,16 +19,20 @@ class Node(Client):
         super().__init__(setting)
         l.info(f'{self.tag} init success')
 
+    # when stop,return true
     def loop_one_time(self):
         self.flesh_global_model()
         acc, loss = self.trainer.evaluate_global()
+        l.info(f"{self.tag} evaluate global model with global test dataset,acc:{acc},loss:{loss}")
         cur_version, cur_state = self.invoker.get_state()
         l.info(f"{self.tag} cur_version:{cur_version} cur_state:{cur_state}")
+        if cur_state == 2:
+            return True
         if cur_state != 0:
             # sleep and retry
             time.sleep(2)
-            return
-        l.info(f"{self.tag} evaluate global model with global test dataset,acc:{acc},loss:{loss}")
+            return False
+
 
         self.local_training()
         acc, loss = self.trainer.evaluate_global()
@@ -42,8 +47,9 @@ class Node(Client):
                 if e is None:
                     latest_version, latest_state = self.invoker.get_state()
                     if latest_version != cur_version:
-                        l.info(f"{self.tag} cur_version {cur_version} do not match latest_version {latest_version} ,skip...")
-                        return
+                        l.info(
+                            f"{self.tag} cur_version {cur_version} do not match latest_version {latest_version} ,skip...")
+                        return False
                     # contract is wait for vote , event is expired, can not catch it ~
                     if latest_state == 1:
                         l.info(f"{self.tag} latest state is need vote,now can vote ,continue...")
@@ -61,20 +67,23 @@ class Node(Client):
                 if e is None:
                     latest_version, latest_state = self.invoker.get_state()
                     if latest_version > cur_version:
-                        l.info(f"{self.tag} latest version {latest_version} > cur version {cur_version},now can aggregate the latest model,continue...")
+                        l.info(
+                            f"{self.tag} latest version {latest_version} > cur version {cur_version},now can aggregate the latest model,continue...")
                         break
                 else:
                     l.info(f"{self.tag} catch event NeedAggregation {e}")
                     break
-
+        return False
 
     def run(self):
         self.enroll()
         if self.is_uploader:
             self.init_model()
-        while True:
-            self.loop_one_time()
+        stop = False
+        while not stop:
+            stop = self.loop_one_time()
 
+        l.info(f"{self.tag} run finish")
 
 def start(setting_path):
     # args = parser.parse_args()
