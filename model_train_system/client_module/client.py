@@ -93,7 +93,10 @@ class MockClient(object):
     def enroll(self):
         self.invoker.enroll()
         l.info(f"{self.tag} enroll")
-        
+
+
+if __name__ == "__main__":
+    pass
 
 
 

@@ -18,12 +18,11 @@ from torch.utils.data import DataLoader
 from torch.utils.data import TensorDataset
 import torch
 
-# aggregate_method = 'fed_vote_avg'
 
 class ClusterSimulator(object):
 
     def __init__(self):
-        init_logging(setting['log_dir'], log_level=logging.DEBUG)
+        init_logging(setting['log_dir'], "DEBUG")
         l.info(
             'aggregate_method = {am} dataset = {ds} |'
             'model_name = {mn}, epochs= {ep} learning_rate = {lr}| '
@@ -230,22 +229,22 @@ class ClusterSimulator(object):
 
         pth_name = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime(time.time())) + \
                    '@nc{nc}_nt{nt}_na{na}@lr{lr}_bs{bs}_ep{ep}_{mn}_{ag}@r{r}.pth'.format(
-                   nc=setting['n_client'],
-                   nt=setting['n_trainer'],
-                   na=setting['n_attacker'],
-                   lr=setting['learning_rate'],
-                   bs=setting['batch_size'],
-                   ep=setting['epochs'],
-                   mn=self.model_name,
-                   ag=setting['aggregate_method'],
-                   r=self.round-1)
-        pth_path = os.path.join(setting['model_dir'],pth_name)
-        torch.save(param_dict,pth_path)
+                       nc=setting['n_client'],
+                       nt=setting['n_trainer'],
+                       na=setting['n_attacker'],
+                       lr=setting['learning_rate'],
+                       bs=setting['batch_size'],
+                       ep=setting['epochs'],
+                       mn=self.model_name,
+                       ag=setting['aggregate_method'],
+                       r=self.round - 1)
+        pth_path = os.path.join(setting['model_dir'], pth_name)
+        torch.save(param_dict, pth_path)
         l.info("save model param dict in pth path:{}".format(pth_path))
 
-    def load(self,round,pth_name):
+    def load(self, round, pth_name):
         self.round = round
-        pth_path = os.path.join(setting['model_dir'],pth_name)
+        pth_path = os.path.join(setting['model_dir'], pth_name)
         param_dict = torch.load(pth_path)
         self.clients[0].trainer.load_param_dict(param_dict)
         for i in range(self.n_client):
@@ -275,6 +274,3 @@ class ClusterSimulator(object):
         csv_path = os.path.join(setting['results_dir'],
                                 csv_name)
         df.to_csv(csv_path, index=False)
-
-
-

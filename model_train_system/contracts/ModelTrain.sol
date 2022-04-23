@@ -30,9 +30,7 @@ contract ModelTrain {
     struct TaskSetting{
         string taskDescription; // the description of the federate learning task
         string modelDescription; // the description of the model(e.g. model name,model struct)
-        string datasetDescription; // the description of the dataset(e.g. struct of the dataset)
-        uint maxVersion; // the max version we train
-        uint nClient; // the number of clients participate in
+        string datasetDescription; // the description of the dataset(e.g. struct of the dataset
     }
     struct TrainSetting{
         uint batchSize; // local training batch size
@@ -40,6 +38,8 @@ contract ModelTrain {
         uint epochs; // local training epoch step
         uint nTrainer; // the number of client participate in one global model update epoch
         uint nPoll; // the number of polls one trainer has
+        uint nClient; // the number of clients participate in
+        uint maxVersion; // the max version we train
     }
     struct ClientInfo{
         address addr; // the address of this client
@@ -108,7 +108,7 @@ contract ModelTrain {
 
     // enroll the train task
     function enrollTrain(string memory _datasetDesc,string memory _extraDesc) external returns (bool){
-        require(clientInfos.length < setting.task.nClient,"no more client can enroll");
+        require(clientInfos.length < setting.train.nClient,"no more client can enroll");
         require(enroll[msg.sender] == false,"client has enrolled");
         ClientInfo memory info = ClientInfo(
             msg.sender,
@@ -143,7 +143,7 @@ contract ModelTrain {
 
     // upload train info
     function uploadTrainInfo(uint _version,uint _dataSize,string memory _modelUpdateHash) public returns (bool){
-        require(curVersion <= setting.task.maxVersion,"model train finished");
+        require(curVersion <= setting.train.maxVersion,"model train finished");
         require(_version == curVersion,"unexpected version");
         require(enroll[msg.sender] == true,"uploader do not enroll the task");
         Snapshot storage snapshot = snapshots[curVersion];
@@ -168,7 +168,7 @@ contract ModelTrain {
 
     // trainer give the poll
     function vote(address[] memory _candidates,uint _version) public returns (bool){
-        require(curVersion <= setting.task.maxVersion,"model train finished");
+        require(curVersion <= setting.train.maxVersion,"model train finished");
         require(_candidates.length <= setting.train.nPoll,"too many candidates");
         require(_version == curVersion,"unexpected version");
         Snapshot storage snapshot = snapshots[curVersion];

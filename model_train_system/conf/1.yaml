@@ -1,0 +1,27 @@
+node:
+  id: 1
+  dir:
+    report_dir: '.\reports'
+    dataset_dir: '.\data'
+    log_dir: '.\reports\logs'
+    results_dir: '.\reports\results'
+    model_dir: '.\reports\model'
+  ipfs_api: '/ip4/127.0.0.1/tcp/5001'
+
+simulate:
+  n_attacker: 3
+
+train:
+  aggregate_method: 'fed_vote_avg'
+  batch_size: 10
+  learning_rate: '0.01'
+  epochs: 2
+  n_trainer: 10
+  n_poll: 6
+  n_client: 10
+  max_version: 100
+
+task:
+  task_description: 'Federate Learning Computing Market Task'
+  model_description: 'mnist_2nn'
+  dataset_description: 'MNIST'

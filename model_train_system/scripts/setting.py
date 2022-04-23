@@ -6,6 +6,8 @@ train_setting = {
     "epochs": 2,
     "n_trainer": 10,
     "n_vote": 6,
+    "n_client": 10,
+    "max_version": 1000,
 }
 task_setting = {
     "task_description": "Federate Learning Computing Market Task",
@@ -13,8 +15,6 @@ task_setting = {
     # "model_description":"emnist_cnn",
     "dataset_description": "MNIST",
     # "dataset_description":"EMNIST",
-    "max_version": 1000,
-    "n_client": 10,
 }
 
 setting = {}
