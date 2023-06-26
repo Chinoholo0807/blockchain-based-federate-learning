@@ -2,4 +2,4 @@
 A blockchain-based federate learning training system
 - pytorch for federated learning
 - ipfs for model save & transfer
-- brownie for blockchain
+- brownie for blockchain simulating
